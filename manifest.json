@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ResumeMark",
-  "version": "0.1",
+  "version": "0.2",
   "description": "Bookmarks that remember where you left off.",
   "permissions": [
     "bookmarks",
@@ -10,5 +10,8 @@
   ],
   "background": {
     "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
   }
 }
