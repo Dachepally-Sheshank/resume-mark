@@ -1,5 +1,6 @@
-console.log("ResumeMark Loaded");
+const BOOKMARK_NAME = "Naruto";
 
+// Save latest URL
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === "complete" && tab.url) {
 
@@ -10,6 +11,38 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
         console.log("Saved:", tab.url);
     }
 });
-chrome.storage.local.get("lastVisitedUrl", (result) => {
-    console.log("Stored URL:", result.lastVisitedUrl);
+
+// When tab closes
+chrome.tabs.onRemoved.addListener(() => {
+
+    chrome.storage.local.get("lastVisitedUrl", (result) => {
+
+        const latestUrl = result.lastVisitedUrl;
+
+        if (!latestUrl) {
+            console.log("No URL stored");
+            return;
+        }
+
+        chrome.bookmarks.search(BOOKMARK_NAME, (results) => {
+
+            if (results.length === 0) {
+                console.log("Bookmark not found");
+                return;
+            }
+
+            const bookmark = results[0];
+
+            chrome.bookmarks.update(
+                bookmark.id,
+                { url: latestUrl },
+                () => {
+                    console.log(
+                        "Updated bookmark to:",
+                        latestUrl
+                    );
+                }
+            );
+        });
+    });
 });
