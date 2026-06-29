@@ -1,13 +1,23 @@
 # ResumeMark
 
-Bookmarks should remember progress, not just locations.
+ResumeMark is a Chrome extension that automatically updates a bookmark to the last page you visited.
 
-ResumeMark automatically updates bookmarks to the last page visited, making it easy to continue where you left off.
-What problem does this solve?
-Why does Chrome not already do this?
-Demo GIF
-Installation
-Usage
-Architecture
-Roadmap
-Contributing
+Example:
+
+Naruto Episode 1
+↓
+Watch until Episode 85
+↓
+Close Tab
+↓
+Bookmark automatically becomes Episode 85
+
+Current Features:
+- Automatic bookmark updates
+- Domain protection
+- Multi-tab support
+
+Roadmap:
+- User-configurable bookmarks
+- Multiple bookmark support
+- Chrome Web Store release
