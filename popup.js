@@ -1,31 +1,75 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
 
-    chrome.storage.local.get(
-        ["bookmarkName", "domains"],
-        (data) => {
+    const select = document.getElementById("bookmarkSelect");
 
-            document.getElementById("bookmarkName").value =
-                data.bookmarkName || "";
+    chrome.bookmarks.getTree((tree) => {
 
-            document.getElementById("domains").value =
-                data.domains || "";
+        const bookmarks = [];
+
+        function traverse(nodes) {
+            for (const node of nodes) {
+
+                if (node.url) {
+                    bookmarks.push(node);
+                }
+
+                if (node.children) {
+                    traverse(node.children);
+                }
+            }
         }
-    );
+
+        traverse(tree);
+
+        bookmarks.forEach(bm => {
+            const option = document.createElement("option");
+            option.value = bm.id;
+            option.textContent = bm.title;
+            select.appendChild(option);
+        });
+
+        chrome.storage.local.get(["bookmarkId"], (data) => {
+            if (data.bookmarkId) {
+                select.value = data.bookmarkId;
+            }
+        });
+    });
 });
 
-document.getElementById("saveBtn")
-.addEventListener("click", () => {
+document.getElementById("saveBtn").addEventListener("click", () => {
 
-    const bookmarkName =
-        document.getElementById("bookmarkName").value;
+    const bookmarkId =
+        document.getElementById("bookmarkSelect").value;
 
-    const domains =
-        document.getElementById("domains").value;
+    chrome.bookmarks.get(
+        bookmarkId,
+        (bookmarks) => {
 
-    chrome.storage.local.set({
-        bookmarkName,
-        domains
-    });
+            if (!bookmarks.length) {
+                return;
+            }
 
-    console.log("Settings saved");
+            const bookmark = bookmarks[0];
+
+            chrome.storage.local.set({
+
+                bookmarkId,
+
+                activeSession: {
+                    bookmarkId,
+                    startUrl: bookmark.url,
+                    lastGoodUrl: bookmark.url
+                }
+
+            }, () => {
+
+                console.log(
+                    "Session Started:",
+                    bookmark.url
+                );
+
+            });
+
+        }
+    );
 });

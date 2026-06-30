@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ResumeMark",
-  "version": "0.2",
-  "description": "Bookmarks that remember where you left off.",
+  "version": "0.3",
+  "description": "Resume where you left off automatically.",
   "permissions": [
     "bookmarks",
     "tabs",
