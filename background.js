@@ -1,19 +1,43 @@
+function extractContentKey(urlString) {
+
+    try {
+
+        const url = new URL(urlString);
+
+        if (!url.pathname.includes("/watch/")) {
+            return null;
+        }
+
+        const slug =
+            url.pathname.split("/watch/")[1];
+
+        if (!slug.includes("-episode-")) {
+            return null;
+        }
+
+        return slug.split("-episode-")[0];
+
+    } catch {
+
+        return null;
+    }
+}
+
 function isGoodUrl(urlString) {
 
     try {
 
         const url = new URL(urlString);
 
-        return (
-            url.pathname.includes("/watch/")
-        );
+        return url.pathname.includes("/watch/");
 
     } catch {
 
         return false;
     }
 }
-console.log("ResumeMark v0.3.1 Loaded");
+
+console.log("ResumeMark v0.4 Loaded");
 
 // --------------------
 // STATE HELPERS
@@ -36,11 +60,12 @@ function setTabState(tabUrls) {
 function getConfig() {
     return new Promise((resolve) => {
         chrome.storage.local.get(
-            ["bookmarkId", "domains"],
-            (res) => resolve(res)
-        );
+    ["bookmarkId"],
+    (res) => resolve(res)
+);
     });
 }
+
 function getSession() {
     return new Promise((resolve) => {
         chrome.storage.local.get(
@@ -58,6 +83,7 @@ function setSession(session) {
         );
     });
 }
+
 // --------------------
 // TRACK TAB UPDATES
 // --------------------
@@ -70,26 +96,47 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     const tabUrls = await getTabState();
 
     tabUrls[tabId] = tab.url;
+
     const session = await getSession();
 
-if (
-    session &&
-    isGoodUrl(tab.url)
-) {
+    if (
+        session &&
+        isGoodUrl(tab.url)
+    ) {
 
-    session.lastGoodUrl = tab.url;
+        const currentKey =
+            extractContentKey(tab.url);
 
-    await setSession(session);
+        if (
+            currentKey &&
+            currentKey === session.contentKey
+        ) {
 
-    console.log(
-        "Updated lastGoodUrl:",
-        tab.url
-    );
-}
+            session.lastGoodUrl = tab.url;
+
+            await setSession(session);
+
+            console.log(
+                "Progress Updated:",
+                currentKey
+            );
+
+        } else {
+
+            console.log(
+                "Ignored Different Content:",
+                currentKey
+            );
+        }
+    }
 
     await setTabState(tabUrls);
 
-    console.log("Stored:", tabId, tab.url);
+    console.log(
+        "Stored:",
+        tabId,
+        tab.url
+    );
 });
 
 // --------------------
@@ -101,68 +148,55 @@ chrome.tabs.onRemoved.addListener(async (tabId) => {
     console.log("Tab closed:", tabId);
 
     const tabUrls = await getTabState();
+
     const latestUrl = tabUrls[tabId];
 
-    console.log("Latest URL:", latestUrl);
+    console.log(
+        "Latest URL:",
+        latestUrl
+    );
 
-    if (!latestUrl) return;
+    if (!latestUrl) {
+        return;
+    }
 
     const config = await getConfig();
 
-    const bookmarkId = config.bookmarkId;
+    const bookmarkId =
+        config.bookmarkId;
 
     if (!bookmarkId) {
-        console.log("No bookmark selected");
-        return;
-    }
 
-    // --------------------
-    // RULE ENGINE
-    // --------------------
-
-    let url;
-
-    try {
-        url = new URL(latestUrl);
-    } catch {
-        return;
-    }
-
-    const allowedDomains = (config.domains || "")
-        .split(",")
-        .map(d => d.trim())
-        .filter(Boolean);
-
-    const isAllowed =
-        allowedDomains.length === 0 ||
-        allowedDomains.some(domain =>
-            url.hostname.includes(domain)
+        console.log(
+            "No bookmark selected"
         );
 
-    if (!isAllowed) {
-        console.log("Blocked domain:", url.hostname);
-        delete tabUrls[tabId];
-        await setTabState(tabUrls);
         return;
     }
 
     // --------------------
-    // ACTION
+    // UPDATE BOOKMARK
     // --------------------
 
-    const session = await getSession();
+    const session =
+        await getSession();
 
-const resumeUrl =
-    session?.lastGoodUrl || latestUrl;
+    const resumeUrl =
+        session?.lastGoodUrl ||
+        latestUrl;
 
-chrome.bookmarks.update(
-    bookmarkId,
-    { url: resumeUrl },
+    chrome.bookmarks.update(
+        bookmarkId,
+        { url: resumeUrl },
         async () => {
 
-            console.log("Bookmark updated:", latestUrl);
+            console.log(
+                "Bookmark updated:",
+                resumeUrl
+            );
 
             delete tabUrls[tabId];
+
             await setTabState(tabUrls);
         }
     );
